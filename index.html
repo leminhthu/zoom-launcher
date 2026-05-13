@@ -37,11 +37,8 @@
     }
     body::before {
       content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(var(--border) 1px, transparent 1px),
-        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      position: fixed; inset: 0;
+      background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
       background-size: 40px 40px;
       opacity: 0.3;
       pointer-events: none;
@@ -50,20 +47,15 @@
     .bg-orb-1 { width: 400px; height: 400px; background: rgba(45,140,255,0.15); top: -120px; left: 50%; transform: translateX(-50%); }
     .bg-orb-2 { width: 250px; height: 250px; background: rgba(34,197,94,0.1); bottom: -60px; right: -60px; }
     .container {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 800px;
+      position: relative; z-index: 1;
+      width: 100%; max-width: 800px;
       padding: 40px 48px;
-      display: flex;
-      align-items: center;
-      gap: 48px;
+      display: flex; align-items: center; gap: 48px;
     }
     .join-btn {
       flex-shrink: 0;
       width: 240px; height: 240px;
-      border-radius: 50%;
-      border: none;
+      border-radius: 50%; border: none;
       background: var(--accent);
       color: white;
       font-family: 'Sora', sans-serif;
@@ -71,13 +63,8 @@
       position: relative;
       box-shadow: 0 0 0 10px rgba(45,140,255,0.1), 0 0 0 20px rgba(45,140,255,0.05), 0 24px 64px var(--accent-glow);
       transition: transform 0.15s, box-shadow 0.15s, background 0.3s;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      -webkit-user-select: none;
-      user-select: none;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+      -webkit-user-select: none; user-select: none;
     }
     .join-btn:active { transform: scale(0.95); }
     .join-btn .btn-icon { font-size: 64px; line-height: 1; }
@@ -89,16 +76,14 @@
     }
     .pulse-ring:nth-child(2) { animation-delay: 1s; }
     .pulse-ring:nth-child(3) { animation-delay: 2s; }
-    @keyframes pulse-ring {
-      0% { transform: scale(1); opacity: 0.5; }
-      100% { transform: scale(1.45); opacity: 0; }
-    }
+    @keyframes pulse-ring { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.45); opacity: 0; } }
     .join-btn.success {
       background: var(--success);
       box-shadow: 0 0 0 10px rgba(34,197,94,0.1), 0 0 0 20px rgba(34,197,94,0.05), 0 24px 64px var(--success-glow);
     }
     .join-btn.success .pulse-ring { border-color: var(--success); }
     .join-btn.error { background: #374151; box-shadow: none; }
+    .join-btn.idle-outside { background: #1e3a5f; box-shadow: 0 0 0 10px rgba(45,140,255,0.05); }
     .join-btn:disabled { cursor: not-allowed; }
     .status-area {
       flex: 1;
@@ -107,10 +92,7 @@
       border-radius: 20px;
       padding: 28px 32px;
       min-height: 100px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 10px;
+      display: flex; flex-direction: column; justify-content: center; gap: 10px;
     }
     .status-area.success { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.05); }
     .status-area.error { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05); }
@@ -120,22 +102,23 @@
     .status-main.error { color: var(--danger); }
     .status-main.loading { color: var(--accent); }
     .status-sub { font-size: 18px; color: var(--muted); line-height: 1.5; }
-    .spinner {
-      width: 28px; height: 28px;
-      border: 3px solid rgba(45,140,255,0.2);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      flex-shrink: 0;
-    }
+    .spinner { width: 28px; height: 28px; border: 3px solid rgba(45,140,255,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .wake-banner {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 12px; padding: 10px 20px;
+      font-size: 13px; color: #f59e0b;
+      white-space: nowrap; z-index: 10; display: none;
+    }
+    .wake-banner.visible { display: block; }
   </style>
 </head>
 <body>
 <div class="bg-orb bg-orb-1"></div>
 <div class="bg-orb bg-orb-2"></div>
 <div class="container">
-  <button class="join-btn" id="joinBtn" onclick="joinClass()">
+  <button class="join-btn idle-outside" id="joinBtn" onclick="joinClass()">
     <div class="pulse-ring"></div>
     <div class="pulse-ring"></div>
     <div class="pulse-ring"></div>
@@ -143,17 +126,28 @@
     <div class="btn-label">Vào lớp</div>
   </button>
   <div class="status-area" id="statusArea">
-    <div class="status-main" id="idleText">⏳ Đang chờ link Zoom…</div>
+    <div class="status-main">⏳ Đang tải…</div>
   </div>
 </div>
+<div class="wake-banner" id="wakeBanner">
+  ⚠️ Không giữ được màn hình sáng — đừng để tablet ngủ trước giờ học nhé Bố
+</div>
+
 <script>
   const SUPABASE_URL = 'https://cqqwsfijhngkuzfsbegx.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxcXdzZmlqaG5na3V6ZnNiZWd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njc3MDEsImV4cCI6MjA5NDE0MzcwMX0.7DUiL5dOu0vcqMHIzeNwyMeIhz92bfR0N7xgGwNmk08';
+  const POLL_INTERVAL = 5000;
+
+  // Default schedule (overridden by Supabase if saved)
+  let schedule = {
+    tueStart: '20:15', tueEnd: '21:30',
+    friStart: '19:45', friEnd: '21:30',
+  };
 
   let lastHandledId = null;
-  let polling = true;
-  let supabaseChannel = null;
   let pollTimer = null;
+  let isPolling = false;
+  let wakeLock = null;
 
   const headers = {
     apikey: SUPABASE_ANON_KEY,
@@ -170,57 +164,121 @@
     `;
   }
 
-  function setIdle() {
-    const btn = document.getElementById('joinBtn');
-    btn.className = 'join-btn';
-    btn.disabled = false;
-    polling = true;
-    setStatus('', '⏳ Đang chờ link Zoom…');
+  function setLoadingStatus() {
+    const area = document.getElementById('statusArea');
+    area.className = 'status-area loading';
+    area.innerHTML = `<div class="status-main loading" style="display:flex;align-items:center;gap:14px;"><div class="spinner"></div> Đang tìm link Zoom…</div>`;
   }
 
-  // ── Time helpers ─────────────────────────────────────────────────────────
-  function isClassWindow() {
-    // Vietnam time = UTC+7
+  // ── Time helpers (Vietnam UTC+7) ──────────────────────────────────────────
+  function getVNTime() {
     const now = new Date();
-    const vnOffset = 7 * 60;
-    const utcMin = now.getUTCHours() * 60 + now.getUTCMinutes();
-    const vnMin = (utcMin + vnOffset) % (24 * 60);
-    const vnDay = (() => {
-      // Compute Vietnam day of week
-      const vnDate = new Date(now.getTime() + vnOffset * 60000);
-      return vnDate.getUTCDay(); // 0=Sun,2=Tue,5=Fri
-    })();
-    const isClassDay = vnDay === 2 || vnDay === 5; // Tuesday or Friday
-    const isClassTime = vnMin >= 19 * 60 + 30 && vnMin <= 21 * 60 + 30; // 7:30pm–9:30pm
-    return isClassDay && isClassTime;
+    const vnDate = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+    return {
+      day: vnDate.getUTCDay(),       // 0=Sun, 2=Tue, 5=Fri
+      hour: vnDate.getUTCHours(),
+      minute: vnDate.getUTCMinutes(),
+      totalMinutes: vnDate.getUTCHours() * 60 + vnDate.getUTCMinutes(),
+    };
+  }
+
+  function timeToMinutes(timeStr) {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function getWindowForToday() {
+    const { day } = getVNTime();
+    if (day === 2) return { start: timeToMinutes(schedule.tueStart), end: timeToMinutes(schedule.tueEnd) };
+    if (day === 5) return { start: timeToMinutes(schedule.friStart), end: timeToMinutes(schedule.friEnd) };
+    return null;
+  }
+
+  function isInPollingWindow() {
+    const window = getWindowForToday();
+    if (!window) return false;
+    const { totalMinutes } = getVNTime();
+    return totalMinutes >= (window.start - 10) && totalMinutes <= window.end;
+  }
+
+  function isInClassWindow() {
+    const window = getWindowForToday();
+    if (!window) return false;
+    const { totalMinutes } = getVNTime();
+    return totalMinutes >= window.start && totalMinutes <= window.end;
+  }
+
+  function minutesUntilNextPoll() {
+    // Find minutes until next polling window starts (for status display)
+    const { totalMinutes, day } = getVNTime();
+    const windows = [
+      { day: 2, start: timeToMinutes(schedule.tueStart) - 10 },
+      { day: 5, start: timeToMinutes(schedule.friStart) - 10 },
+    ];
+    // Check today first, then look ahead
+    for (let offset = 0; offset < 7; offset++) {
+      const checkDay = (day + offset) % 7;
+      const w = windows.find(w => w.day === checkDay);
+      if (w) {
+        const minsFromNow = offset === 0
+          ? w.start - totalMinutes
+          : (24 * 60 - totalMinutes) + (offset - 1) * 24 * 60 + w.start;
+        if (minsFromNow > 0) return { minutes: minsFromNow, dayName: checkDay === 2 ? 'Thứ Ba' : 'Thứ Sáu' };
+      }
+    }
+    return null;
+  }
+
+  // ── Status display based on current time ─────────────────────────────────
+  function updateIdleStatus() {
+    const btn = document.getElementById('joinBtn');
+    if (isInPollingWindow()) {
+      btn.className = 'join-btn';
+      if (isInClassWindow()) {
+        setStatus('loading', '<span style="display:flex;align-items:center;gap:14px;"><span class="spinner"></span> Đang chờ link Zoom…</span>');
+      } else {
+        setStatus('loading', '<span style="display:flex;align-items:center;gap:14px;"><span class="spinner"></span> Chuẩn bị vào lớp…</span>');
+      }
+    } else {
+      btn.className = 'join-btn idle-outside';
+      const next = minutesUntilNextPoll();
+      if (next) {
+        const hours = Math.floor(next.minutes / 60);
+        const mins = next.minutes % 60;
+        const timeStr = hours > 0 ? `${hours} tiếng ${mins} phút` : `${mins} phút`;
+        setStatus('', `⏰ Chưa đến giờ học`, `Lớp ${next.dayName} bắt đầu sau ${timeStr} nữa`);
+      } else {
+        setStatus('', '⏰ Chưa đến giờ học');
+      }
+    }
   }
 
   // ── Zoom launch ───────────────────────────────────────────────────────────
   async function launchZoom(row) {
     if (row.id === lastHandledId) return;
     lastHandledId = row.id;
-    polling = false;
 
     const btn = document.getElementById('joinBtn');
     btn.className = 'join-btn success';
     btn.disabled = true;
+    setStatus('success', '✅ Đang mở Zoom…');
 
-    const area = document.getElementById('statusArea');
-    area.className = 'status-area success';
-    area.innerHTML = `<div class="status-main success" style="display:flex;align-items:center;gap:14px;"><div class="spinner" style="border-top-color:#22c55e;"></div> Đang mở Zoom…</div>`;
-
-    // Mark as done in Supabase
     await fetch(`${SUPABASE_URL}/rest/v1/zoom_signals?id=eq.${row.id}`, {
       method: 'PATCH',
-      headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      headers: { ...headers, Prefer: 'return=minimal' },
       body: JSON.stringify({ status: 'done' }),
     });
 
     window.location.href = convertToDeepLink(row.zoom_url);
-    setTimeout(setIdle, 10000);
+
+    setTimeout(() => {
+      btn.className = 'join-btn';
+      btn.disabled = false;
+      updateIdleStatus();
+    }, 10000);
   }
 
-  // ── Fetch latest signal ───────────────────────────────────────────────────
+  // ── Fetch & validate ──────────────────────────────────────────────────────
   async function fetchLatestSignal() {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/zoom_signals?order=created_at.desc&limit=1`,
@@ -238,79 +296,15 @@
     return true;
   }
 
-  // ── Real-time push via Supabase websocket ─────────────────────────────────
-  function connectRealtime() {
-    // Supabase Realtime uses a specific websocket protocol
-    const wsUrl = `${SUPABASE_URL.replace('https://', 'wss://')}/realtime/v1/websocket?apikey=${SUPABASE_ANON_KEY}&vsn=1.0.0`;
-    const ws = new WebSocket(wsUrl);
-    let heartbeatTimer = null;
-    let ref = 1;
-
-    ws.onopen = () => {
-      console.log('[Realtime] Connected');
-
-      // Join the postgres_changes channel
-      const joinMsg = {
-        topic: 'realtime:public:zoom_signals',
-        event: 'phx_join',
-        payload: {
-          config: {
-            broadcast: { self: false },
-            postgres_changes: [{ event: 'INSERT', schema: 'public', table: 'zoom_signals' }]
-          }
-        },
-        ref: String(ref++)
-      };
-      ws.send(JSON.stringify(joinMsg));
-
-      // Heartbeat every 30s to keep connection alive
-      heartbeatTimer = setInterval(() => {
-        ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(ref++) }));
-      }, 30000);
-    };
-
-    ws.onmessage = async (e) => {
-      try {
-        const msg = JSON.parse(e.data);
-        // Postgres INSERT event
-        if (msg.event === 'postgres_changes' || (msg.payload && msg.payload.data && msg.payload.data.type === 'INSERT')) {
-          const record = msg.payload?.data?.record || msg.payload?.record;
-          if (record && isValidRow(record)) {
-            console.log('[Realtime] New signal received via push:', record);
-            await launchZoom(record);
-          }
-        }
-      } catch (err) {
-        console.error('[Realtime] Message parse error:', err);
-      }
-    };
-
-    ws.onerror = (e) => console.warn('[Realtime] WS error:', e);
-
-    ws.onclose = () => {
-      console.warn('[Realtime] Disconnected — reconnecting in 5s…');
-      clearInterval(heartbeatTimer);
-      setTimeout(connectRealtime, 5000);
-    };
-
-    supabaseChannel = ws;
-  }
-
-  // ── Fallback polling (Tue/Fri 7:30–9:30pm VN only) ───────────────────────
-  async function pollFallback() {
-    if (!polling) return;
-    if (!isClassWindow()) return;
-
+  // ── Schedule-based polling ────────────────────────────────────────────────
+  async function poll() {
+    if (!isInPollingWindow()) return;
     try {
       const rows = await fetchLatestSignal();
-      if (!rows || rows.length === 0) return;
-      const row = rows[0];
-      if (isValidRow(row)) {
-        console.log('[Fallback] New signal detected via poll:', row);
-        await launchZoom(row);
-      }
+      if (!rows || !rows.length) return;
+      if (isValidRow(rows[0])) await launchZoom(rows[0]);
     } catch (err) {
-      console.error('[Fallback] Poll error:', err);
+      console.error('[Poll] Error:', err);
     }
   }
 
@@ -318,17 +312,14 @@
   async function joinClass() {
     const btn = document.getElementById('joinBtn');
     btn.disabled = true;
-    polling = false;
-    const area = document.getElementById('statusArea');
-    area.className = 'status-area loading';
-    area.innerHTML = `<div class="status-main loading" style="display:flex;align-items:center;gap:14px;"><div class="spinner"></div> Đang tìm link Zoom…</div>`;
+    setLoadingStatus();
 
     try {
       const rows = await fetchLatestSignal();
-      if (!rows || rows.length === 0) {
+      if (!rows || !rows.length) {
         btn.className = 'join-btn error';
         setStatus('error', '😔 Chưa có link Zoom', 'Con chưa gửi link. Thử lại sau nhé Bố.');
-        setTimeout(setIdle, 5000);
+        setTimeout(() => { btn.className = 'join-btn'; btn.disabled = false; updateIdleStatus(); }, 5000);
         return;
       }
       const row = rows[0];
@@ -336,37 +327,69 @@
       if (age > 180) {
         btn.className = 'join-btn error';
         setStatus('error', '⏰ Link đã cũ', 'Con chưa gửi link mới. Thử lại sau nhé Bố.');
-        setTimeout(setIdle, 5000);
+        setTimeout(() => { btn.className = 'join-btn'; btn.disabled = false; updateIdleStatus(); }, 5000);
         return;
       }
       await launchZoom(row);
     } catch (err) {
-      console.error(err);
+      const btn = document.getElementById('joinBtn');
       btn.className = 'join-btn error';
       setStatus('error', '❌ Lỗi kết nối', 'Kiểm tra wifi rồi thử lại Bố nhé.');
-      setTimeout(setIdle, 5000);
+      setTimeout(() => { btn.className = 'join-btn'; btn.disabled = false; updateIdleStatus(); }, 5000);
     }
   }
 
-  // ── Deep link converter ───────────────────────────────────────────────────
+  // ── Deep link ─────────────────────────────────────────────────────────────
   function convertToDeepLink(url) {
     try {
       if (url.startsWith('zoommtg://') || url.startsWith('zoomus://')) return url;
       const u = new URL(url);
-      const pathParts = u.pathname.split('/');
-      const meetingId = pathParts[pathParts.length - 1];
+      const meetingId = u.pathname.split('/').pop();
       const pwd = u.searchParams.get('pwd') || '';
-      let deepLink = `zoommtg://zoom.us/join?confno=${meetingId}`;
-      if (pwd) deepLink += `&pwd=${pwd}`;
-      return deepLink;
-    } catch (e) {
-      return url;
+      return `zoommtg://zoom.us/join?confno=${meetingId}${pwd ? '&pwd=' + pwd : ''}`;
+    } catch (e) { return url; }
+  }
+
+  // ── Wake Lock ─────────────────────────────────────────────────────────────
+  async function requestWakeLock() {
+    if (!('wakeLock' in navigator)) { document.getElementById('wakeBanner').classList.add('visible'); return; }
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      document.getElementById('wakeBanner').classList.remove('visible');
+      wakeLock.addEventListener('release', () => {
+        document.getElementById('wakeBanner').classList.add('visible');
+        setTimeout(requestWakeLock, 2000);
+      });
+    } catch (err) {
+      document.getElementById('wakeBanner').classList.add('visible');
     }
   }
 
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      requestWakeLock();
+      updateIdleStatus();
+      poll(); // immediate check when screen turns on
+    }
+  });
+
+  // ── Load schedule from Supabase ───────────────────────────────────────────
+  async function loadSchedule() {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/class_schedule?id=eq.1`, { headers });
+      const rows = await res.json();
+      if (rows && rows.length) {
+        schedule = { ...schedule, ...rows[0] };
+      }
+    } catch (e) {}
+    updateIdleStatus();
+  }
+
   // ── Init ──────────────────────────────────────────────────────────────────
-  connectRealtime();
-  setInterval(pollFallback, 10000);
+  loadSchedule();
+  setInterval(poll, POLL_INTERVAL);
+  setInterval(updateIdleStatus, 60000); // refresh status display every minute
+  requestWakeLock();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.error);
