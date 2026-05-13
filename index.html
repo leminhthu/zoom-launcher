@@ -265,11 +265,8 @@
 
   // ── Tap handler ───────────────────────────────────────────────────────────
   async function onTap() {
-    if (currentState === 'ready' && pendingRow) {
-      await doLaunch(pendingRow);
-      return;
-    }
-    // Manual check (tapped in state-wait or state-error)
+    // Always do a fresh fetch on tap — ensures latest link is used
+    // regardless of whether pendingRow is stale or a newer link was uploaded
     try {
       const rows = await fetchLatestSignal();
       if (!rows || !rows.length) { setState('error'); return; }
@@ -277,7 +274,7 @@
       const age = (Date.now() - new Date(row.created_at).getTime()) / 1000 / 60;
       if (row.status === 'done' || age > 180) { setState('error'); return; }
       pendingRow = row;
-      setState('ready');
+      await doLaunch(row);
     } catch(e) {
       setState('error');
     }
@@ -353,11 +350,22 @@
     } catch(e) { return false; }
   }
 
-  async function poll() {
-    if (currentState === 'joining' || currentState === 'ready') return;
+  async function checkTriggerActive() {
     const active = await checkTrigger();
+    // If polling window has expired and we're stuck in state 2, revert to state 1
+    if (!active && currentState === 'ready') {
+      pendingRow = null;
+      setState('wait');
+    }
+    return active;
+  }
+
+  async function poll() {
+    if (currentState === 'joining') return;
+    const active = await checkTriggerActive();
     isPollingActive = active;
     if (!active) return;
+    if (currentState === 'ready') return; // guard: don't overwrite ready state
 
     try {
       const rows = await fetchLatestSignal();
