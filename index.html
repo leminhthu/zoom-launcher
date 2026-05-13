@@ -365,7 +365,6 @@
     const active = await checkTriggerActive();
     isPollingActive = active;
     if (!active) return;
-    if (currentState === 'ready') return; // guard: don't overwrite ready state
 
     try {
       const rows = await fetchLatestSignal();
@@ -375,7 +374,16 @@
       if (row.status === 'done') { lastHandledId = row.id; return; }
       const age = (Date.now() - new Date(row.created_at).getTime()) / 1000 / 60;
       if (age > 180) return;
-      // New valid link found — go to ready state, wait for tap
+
+      // If already in state 2 with a different (older) link, reset briefly then re-enter
+      if (currentState === 'ready' && pendingRow && pendingRow.id !== row.id) {
+        pendingRow = row;
+        setState('wait');
+        setTimeout(() => { if (currentState === 'wait') { pendingRow = row; setState('ready'); } }, 800);
+        return;
+      }
+
+      // New valid link — enter state 2
       pendingRow = row;
       setState('ready');
     } catch(e) {}
