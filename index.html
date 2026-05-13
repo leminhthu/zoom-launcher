@@ -6,92 +6,136 @@
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="theme-color" content="#080c14"/>
+  <meta name="theme-color" content="#0d1117"/>
   <title>Vào lớp</title>
   <link rel="manifest" href="manifest.json"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #080c14;
-      --surface: #0e1520;
-      --border: #1c2a3a;
-      --accent: #2D8CFF;
-      --accent-glow: rgba(45,140,255,0.3);
-      --success: #22c55e;
-      --success-glow: rgba(34,197,94,0.3);
-      --danger: #ef4444;
-      --text: #e8f0fe;
-      --muted: #4a6080;
-    }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; width: 100%; overflow: hidden; }
+
     body {
       font-family: 'Sora', sans-serif;
-      background: var(--bg); color: var(--text);
-      display: flex; align-items: center; justify-content: center;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 32px 28px;
+      gap: 20px;
+      transition: background 0.5s ease;
       position: relative;
     }
-    body::before {
-      content: ''; position: fixed; inset: 0;
-      background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
-      background-size: 40px 40px; opacity: 0.3; pointer-events: none;
+
+    body.state-wait    { background: #0d1117; }
+    body.state-ready   { background: #0a1f3d; }
+    body.state-joining { background: #0a2318; }
+    body.state-error   { background: #0d1117; }
+
+    .grid-overlay {
+      position: fixed; inset: 0; pointer-events: none;
+      background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 28px 28px;
+      transition: opacity 0.5s;
     }
-    .bg-orb { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(80px); opacity: 0.5; }
-    .bg-orb-1 { width: 400px; height: 400px; background: rgba(45,140,255,0.15); top: -120px; left: 50%; transform: translateX(-50%); }
-    .bg-orb-2 { width: 250px; height: 250px; background: rgba(34,197,94,0.1); bottom: -60px; right: -60px; }
-    .container {
+    body.state-ready .grid-overlay,
+    body.state-joining .grid-overlay { opacity: 0; }
+
+    .top-icon {
+      font-size: 64px; line-height: 1;
+      transition: opacity 0.4s;
       position: relative; z-index: 1;
-      width: 100%; max-width: 800px;
-      padding: 40px 48px;
-      display: flex; align-items: center; gap: 48px;
     }
-    .join-btn {
-      flex-shrink: 0; width: 240px; height: 240px;
-      border-radius: 50%; border: none;
-      background: var(--accent); color: white;
-      font-family: 'Sora', sans-serif; cursor: pointer;
-      position: relative;
-      box-shadow: 0 0 0 10px rgba(45,140,255,0.1), 0 0 0 20px rgba(45,140,255,0.05), 0 24px 64px var(--accent-glow);
-      transition: transform 0.15s, box-shadow 0.15s, background 0.3s;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+
+    .main-msg {
+      font-size: 26px; font-weight: 700;
+      line-height: 1.3;
+      transition: color 0.4s;
+      position: relative; z-index: 1;
+    }
+    body.state-wait    .main-msg { color: #3a5070; }
+    body.state-ready   .main-msg { color: #60aaff; }
+    body.state-joining .main-msg { color: #4ade80; }
+    body.state-error   .main-msg { color: #ef4444; }
+
+    /* Big tap button */
+    .tap-btn {
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; cursor: pointer; border: none;
+      font-family: 'Sora', sans-serif;
+      position: relative; z-index: 1;
+      transition: background 0.4s, box-shadow 0.4s, transform 0.15s;
       -webkit-user-select: none; user-select: none;
     }
-    .join-btn:active { transform: scale(0.95); }
-    .join-btn .btn-icon { font-size: 64px; line-height: 1; }
-    .join-btn .btn-label { font-size: 26px; font-weight: 600; }
-    .pulse-ring {
-      position: absolute; inset: -10px; border-radius: 50%;
-      border: 2px solid var(--accent); opacity: 0;
-      animation: pulse-ring 3s ease-out infinite;
+    .tap-btn:active { transform: scale(0.94); }
+
+    body.state-wait .tap-btn, body.state-error .tap-btn {
+      background: #1a1f2e;
+      border: 3px dashed #2a3a50;
+      box-shadow: none;
     }
-    .pulse-ring:nth-child(2) { animation-delay: 1s; }
-    .pulse-ring:nth-child(3) { animation-delay: 2s; }
-    @keyframes pulse-ring { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.45); opacity: 0; } }
-    .join-btn.success {
-      background: var(--success);
-      box-shadow: 0 0 0 10px rgba(34,197,94,0.1), 0 0 0 20px rgba(34,197,94,0.05), 0 24px 64px var(--success-glow);
+    body.state-ready .tap-btn {
+      background: #2D8CFF;
+      box-shadow: 0 0 0 14px rgba(45,140,255,0.18), 0 0 0 28px rgba(45,140,255,0.08);
+      animation: pulse-ready 1.2s ease-in-out infinite;
     }
-    .join-btn.success .pulse-ring { border-color: var(--success); }
-    .join-btn.error { background: #374151; box-shadow: none; }
-    .join-btn.idle-waiting { background: #1e3a5f; box-shadow: 0 0 0 10px rgba(45,140,255,0.05); }
-    .join-btn:disabled { cursor: not-allowed; }
-    .status-area {
-      flex: 1; background: var(--surface);
-      border: 1px solid var(--border); border-radius: 20px;
-      padding: 28px 32px; min-height: 100px;
-      display: flex; flex-direction: column; justify-content: center; gap: 10px;
+    body.state-joining .tap-btn {
+      background: #22c55e;
+      box-shadow: 0 0 0 14px rgba(34,197,94,0.18), 0 0 0 28px rgba(34,197,94,0.08);
+      animation: none;
     }
-    .status-area.success { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.05); }
-    .status-area.error   { border-color: rgba(239,68,68,0.3);  background: rgba(239,68,68,0.05); }
-    .status-area.loading { border-color: rgba(45,140,255,0.3); background: rgba(45,140,255,0.05); }
-    .status-main { font-size: 24px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 10px; }
-    .status-main.success { color: var(--success); }
-    .status-main.error   { color: var(--danger); }
-    .status-main.loading { color: var(--accent); }
-    .status-sub { font-size: 18px; color: var(--muted); line-height: 1.5; }
-    .spinner { width: 28px; height: 28px; border: 3px solid rgba(45,140,255,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+    @keyframes pulse-ready {
+      0%,100% { box-shadow: 0 0 0 14px rgba(45,140,255,0.18), 0 0 0 28px rgba(45,140,255,0.08); }
+      50%      { box-shadow: 0 0 0 22px rgba(45,140,255,0.25), 0 0 0 38px rgba(45,140,255,0.12); }
+    }
+
+    .btn-icon {
+      font-size: 56px; line-height: 1;
+      transition: opacity 0.4s;
+    }
+    body.state-wait .btn-icon,
+    body.state-error .btn-icon { opacity: 0.15; }
+
+    .btn-label {
+      font-size: 15px; font-weight: 700;
+      transition: color 0.4s;
+    }
+    body.state-wait .btn-label,
+    body.state-error .btn-label { color: #2a3a50; }
+    body.state-ready .btn-label,
+    body.state-joining .btn-label { color: white; }
+
+    /* Bottom strip */
+    .strip {
+      width: 100%; max-width: 340px;
+      padding: 12px 20px; border-radius: 12px;
+      font-size: 15px; font-weight: 500;
+      transition: background 0.4s, color 0.4s;
+      position: relative; z-index: 1;
+    }
+    body.state-wait .strip, body.state-error .strip {
+      background: rgba(255,255,255,0.03); color: #3a5070;
+    }
+    body.state-ready .strip {
+      background: rgba(45,140,255,0.15); color: #90c4ff;
+    }
+    body.state-joining .strip {
+      background: rgba(34,197,94,0.15); color: #86efac;
+    }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(45,140,255,0.2);
+      border-top-color: #60aaff;
+      border-radius: 50%;
+      display: inline-block; vertical-align: -3px;
+      margin-right: 8px;
+      animation: spin 0.8s linear infinite;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
+
     .wake-banner {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
       background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3);
@@ -102,21 +146,22 @@
     .wake-banner.visible { display: block; }
   </style>
 </head>
-<body>
-<div class="bg-orb bg-orb-1"></div>
-<div class="bg-orb bg-orb-2"></div>
-<div class="container">
-  <button class="join-btn idle-waiting" id="joinBtn" onclick="joinClass()">
-    <div class="pulse-ring"></div>
-    <div class="pulse-ring"></div>
-    <div class="pulse-ring"></div>
-    <div class="btn-icon">📹</div>
-    <div class="btn-label">Vào lớp</div>
-  </button>
-  <div class="status-area" id="statusArea">
-    <div class="status-main">⏳ Đang chờ…</div>
-  </div>
+<body class="state-wait">
+
+<div class="grid-overlay"></div>
+
+<div class="top-icon" id="topIcon">📹</div>
+<div class="main-msg" id="mainMsg">Chờ con gửi link…</div>
+
+<button class="tap-btn" id="tapBtn" onclick="onTap()">
+  <div class="btn-icon" id="btnIcon">👆</div>
+  <div class="btn-label" id="btnLabel">Chờ chút</div>
+</button>
+
+<div class="strip" id="strip">
+  <span class="spinner"></span>Đang chờ link Zoom
 </div>
+
 <div class="wake-banner" id="wakeBanner">
   ⚠️ Không giữ được màn hình sáng — đừng để tablet ngủ nhé Bố
 </div>
@@ -128,76 +173,110 @@
   const POLL_INTERVAL = 5000;
 
   let lastHandledId = null;
+  let pendingRow = null;
   let wakeLock = null;
   let isPollingActive = false;
+  let currentState = 'wait';
 
   const headers = {
     apikey: SUPABASE_ANON_KEY,
     Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
   };
 
-  // ── UI helpers ────────────────────────────────────────────────────────────
-  function setStatus(type, main, sub) {
-    const area = document.getElementById('statusArea');
-    area.className = `status-area ${type}`;
-    area.innerHTML = `
-      <div class="status-main ${type}">${main}</div>
-      ${sub ? `<div class="status-sub">${sub}</div>` : ''}
-    `;
-  }
+  // ── State machine ─────────────────────────────────────────────────────────
+  function setState(state) {
+    currentState = state;
+    const body = document.body;
+    body.className = `state-${state}`;
 
-  function setIdle() {
-    const btn = document.getElementById('joinBtn');
-    btn.className = isPollingActive ? 'join-btn' : 'join-btn idle-waiting';
-    btn.disabled = false;
-    if (isPollingActive) {
-      setStatus('loading', '<span style="display:flex;align-items:center;gap:14px;"><span class="spinner"></span> Đang chờ link Zoom…</span>');
-    } else {
-      setStatus('', '⏳ Đang chờ…');
+    const topIcon  = document.getElementById('topIcon');
+    const mainMsg  = document.getElementById('mainMsg');
+    const btnIcon  = document.getElementById('btnIcon');
+    const btnLabel = document.getElementById('btnLabel');
+    const strip    = document.getElementById('strip');
+    const btn      = document.getElementById('tapBtn');
+
+    if (state === 'wait') {
+      topIcon.textContent  = '📹';
+      mainMsg.textContent  = 'Chờ con gửi link…';
+      btnIcon.textContent  = '👆';
+      btnLabel.textContent = 'Chờ chút';
+      strip.innerHTML      = '<span class="spinner"></span>Đang chờ link Zoom';
+      btn.disabled = false;
+    } else if (state === 'ready') {
+      topIcon.textContent  = '🎉';
+      mainMsg.textContent  = 'Zoom sẵn sàng!';
+      btnIcon.textContent  = '👆';
+      btnLabel.textContent = 'Nhấn vào đây';
+      strip.textContent    = 'Nhấn nút để vào lớp học';
+      btn.disabled = false;
+      playChime();
+    } else if (state === 'joining') {
+      topIcon.textContent  = '✅';
+      mainMsg.textContent  = 'Đang mở Zoom…';
+      btnIcon.textContent  = '📹';
+      btnLabel.textContent = 'Đang mở Zoom';
+      strip.textContent    = 'Chúc Bố học vui!';
+      btn.disabled = true;
+    } else if (state === 'error') {
+      topIcon.textContent  = '😔';
+      mainMsg.textContent  = 'Chưa có link Zoom';
+      btnIcon.textContent  = '👆';
+      btnLabel.textContent = 'Chờ chút';
+      strip.textContent    = 'Tự động thử lại sau 5 giây…';
+      btn.disabled = false;
+      setTimeout(() => setState('wait'), 5000);
     }
   }
 
-  // ── Trigger check ─────────────────────────────────────────────────────────
-  async function checkTrigger() {
+  // ── Gentle chime ──────────────────────────────────────────────────────────
+  function playChime() {
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/polling_trigger?id=eq.1`, { headers });
-      const rows = await res.json();
-      if (!rows || !rows.length) { isPollingActive = false; return false; }
-      const age = (Date.now() - new Date(rows[0].triggered_at).getTime()) / 1000 / 60;
-      isPollingActive = age < POLLING_WINDOW_MINUTES;
-      return isPollingActive;
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5 — gentle major chord
+      notes.forEach((freq, i) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        const start = ctx.currentTime + i * 0.18;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(0.12, start + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.8);
+        osc.start(start);
+        osc.stop(start + 0.8);
+      });
+    } catch(e) {}
+  }
+
+  // ── Tap handler ───────────────────────────────────────────────────────────
+  async function onTap() {
+    if (currentState === 'ready' && pendingRow) {
+      await doLaunch(pendingRow);
+      return;
+    }
+    // Manual check (tapped in state-wait or state-error)
+    try {
+      const rows = await fetchLatestSignal();
+      if (!rows || !rows.length) { setState('error'); return; }
+      const row = rows[0];
+      const age = (Date.now() - new Date(row.created_at).getTime()) / 1000 / 60;
+      if (row.status === 'done' || age > 180) { setState('error'); return; }
+      pendingRow = row;
+      setState('ready');
     } catch(e) {
-      return false;
+      setState('error');
     }
   }
 
-  // ── Fetch & validate signal ───────────────────────────────────────────────
-  async function fetchLatestSignal() {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/zoom_signals?order=created_at.desc&limit=1`,
-      { headers }
-    );
-    return res.json();
-  }
-
-  function isValidRow(row) {
-    if (!row) return false;
-    if (row.id === lastHandledId) return false;
-    if (row.status === 'done') { lastHandledId = row.id; return false; }
-    const age = (Date.now() - new Date(row.created_at).getTime()) / 1000 / 60;
-    if (age > 180) return false;
-    return true;
-  }
-
-  // ── Zoom launch ───────────────────────────────────────────────────────────
-  async function launchZoom(row) {
+  // ── Launch Zoom ───────────────────────────────────────────────────────────
+  async function doLaunch(row) {
     if (row.id === lastHandledId) return;
     lastHandledId = row.id;
-
-    const btn = document.getElementById('joinBtn');
-    btn.className = 'join-btn success';
-    btn.disabled = true;
-    setStatus('success', '✅ Đang mở Zoom…');
+    pendingRow = null;
+    setState('joining');
 
     await fetch(`${SUPABASE_URL}/rest/v1/zoom_signals?id=eq.${row.id}`, {
       method: 'PATCH',
@@ -206,109 +285,79 @@
     });
 
     await tryLaunchZoom(row.zoom_url);
-    setTimeout(setIdle, 10000);
+    setTimeout(() => setState('wait'), 10000);
   }
 
-  // ── Main poll ─────────────────────────────────────────────────────────────
-  async function poll() {
-    const active = await checkTrigger();
-    setIdle(); // update button/status to reflect polling state
-    if (!active) return;
-
-    try {
-      const rows = await fetchLatestSignal();
-      if (!rows || !rows.length) return;
-      if (isValidRow(rows[0])) await launchZoom(rows[0]);
-    } catch(err) {
-      console.error('[Poll] Error:', err);
-    }
-  }
-
-  // ── Manual tap ────────────────────────────────────────────────────────────
-  async function joinClass() {
-    const btn = document.getElementById('joinBtn');
-    btn.disabled = true;
-    const area = document.getElementById('statusArea');
-    area.className = 'status-area loading';
-    area.innerHTML = `<div class="status-main loading" style="display:flex;align-items:center;gap:14px;"><div class="spinner"></div> Đang tìm link Zoom…</div>`;
-
-    try {
-      const rows = await fetchLatestSignal();
-      if (!rows || !rows.length) {
-        btn.className = 'join-btn error';
-        setStatus('error', '😔 Chưa có link Zoom', 'Con chưa gửi link. Thử lại sau nhé Bố.');
-        setTimeout(setIdle, 5000);
-        return;
-      }
-      const row = rows[0];
-      const age = (Date.now() - new Date(row.created_at).getTime()) / 1000 / 60;
-      if (age > 180) {
-        btn.className = 'join-btn error';
-        setStatus('error', '⏰ Link đã cũ', 'Con chưa gửi link mới. Thử lại sau nhé Bố.');
-        setTimeout(setIdle, 5000);
-        return;
-      }
-      await launchZoom(row);
-    } catch(err) {
-      const btn = document.getElementById('joinBtn');
-      btn.className = 'join-btn error';
-      setStatus('error', '❌ Lỗi kết nối', 'Kiểm tra wifi rồi thử lại Bố nhé.');
-      setTimeout(setIdle, 5000);
-    }
-  }
-
-  // ── Deep link ─────────────────────────────────────────────────────────────
+  // ── Zoom launch strategies ────────────────────────────────────────────────
   function parseZoomUrl(url) {
-    // Handles all Zoom URL formats:
-    // https://zoom.us/j/MEETINGID?pwd=XXX
-    // https://us05web.zoom.us/j/MEETINGID?pwd=XXX
-    // https://us06web.zoom.us/j/MEETINGID?pwd=XXX
-    // https://zoom.us/wc/join/MEETINGID
     try {
       const u = new URL(url);
       const parts = u.pathname.split('/').filter(Boolean);
-      // Find meeting ID — it's the numeric segment after /j/ or /join/
       let meetingId = null;
       for (let i = 0; i < parts.length; i++) {
         if ((parts[i] === 'j' || parts[i] === 'join') && parts[i + 1]) {
-          meetingId = parts[i + 1].replace(/\D/g, ''); // strip non-digits
+          meetingId = parts[i + 1].replace(/[^0-9]/g, '');
           break;
         }
       }
-      // Fallback: last numeric-looking segment
-      if (!meetingId) meetingId = parts[parts.length - 1].replace(/\D/g, '');
+      if (!meetingId) meetingId = parts[parts.length - 1].replace(/[^0-9]/g, '');
       const pwd = u.searchParams.get('pwd') || '';
       return { meetingId, pwd };
     } catch(e) { return null; }
-  }
-
-  function convertToDeepLink(url) {
-    if (url.startsWith('zoommtg://') || url.startsWith('zoomus://')) return url;
-    const parsed = parseZoomUrl(url);
-    if (!parsed) return url;
-    const { meetingId, pwd } = parsed;
-    return `zoommtg://zoom.us/join?confno=${meetingId}${pwd ? '&pwd=' + pwd : ''}`;
   }
 
   async function tryLaunchZoom(originalUrl) {
     const parsed = parseZoomUrl(originalUrl);
     if (!parsed) { window.location.href = originalUrl; return; }
     const { meetingId, pwd } = parsed;
+    const pwdParam = pwd ? `&pwd=${pwd}` : '';
 
-    // Strategy 1: zoommtg:// deep link
-    window.location.href = `zoommtg://zoom.us/join?confno=${meetingId}${pwd ? '&pwd=' + pwd : ''}`;
+    window.location.href = `zoommtg://zoom.us/join?confno=${meetingId}${pwdParam}`;
     await new Promise(r => setTimeout(r, 3000));
-
-    // Strategy 2: zoomus:// (alternative scheme some Android versions prefer)
-    window.location.href = `zoomus://zoom.us/join?confno=${meetingId}${pwd ? '&pwd=' + pwd : ''}`;
+    window.location.href = `zoomus://zoom.us/join?confno=${meetingId}${pwdParam}`;
     await new Promise(r => setTimeout(r, 3000));
-
-    // Strategy 3: Android intent:// (most forceful, bypasses scheme resolution)
-    window.location.href = `intent://zoom.us/join?confno=${meetingId}${pwd ? '&pwd=' + pwd : ''}#Intent;scheme=zoommtg;package=us.zoom.videomeetings;end`;
+    window.location.href = `intent://zoom.us/join?confno=${meetingId}${pwdParam}#Intent;scheme=zoommtg;package=us.zoom.videomeetings;end`;
     await new Promise(r => setTimeout(r, 3000));
-
-    // Strategy 4: fall back to original https URL — triggers "Open with Zoom?" system dialog
     window.location.href = originalUrl;
+  }
+
+  // ── Poll ──────────────────────────────────────────────────────────────────
+  async function fetchLatestSignal() {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/zoom_signals?order=created_at.desc&limit=1`,
+      { headers }
+    );
+    return res.json();
+  }
+
+  async function checkTrigger() {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/polling_trigger?id=eq.1`, { headers });
+      const rows = await res.json();
+      if (!rows || !rows.length) return false;
+      const age = (Date.now() - new Date(rows[0].triggered_at).getTime()) / 1000 / 60;
+      return age < POLLING_WINDOW_MINUTES;
+    } catch(e) { return false; }
+  }
+
+  async function poll() {
+    if (currentState === 'joining' || currentState === 'ready') return;
+    const active = await checkTrigger();
+    isPollingActive = active;
+    if (!active) return;
+
+    try {
+      const rows = await fetchLatestSignal();
+      if (!rows || !rows.length) return;
+      const row = rows[0];
+      if (row.id === lastHandledId) return;
+      if (row.status === 'done') { lastHandledId = row.id; return; }
+      const age = (Date.now() - new Date(row.created_at).getTime()) / 1000 / 60;
+      if (age > 180) return;
+      // New valid link found — go to ready state, wait for tap
+      pendingRow = row;
+      setState('ready');
+    } catch(e) {}
   }
 
   // ── Wake Lock ─────────────────────────────────────────────────────────────
@@ -321,7 +370,7 @@
         document.getElementById('wakeBanner').classList.add('visible');
         setTimeout(requestWakeLock, 2000);
       });
-    } catch(err) {
+    } catch(e) {
       document.getElementById('wakeBanner').classList.add('visible');
     }
   }
@@ -334,7 +383,8 @@
   });
 
   // ── Init ──────────────────────────────────────────────────────────────────
-  poll(); // immediate check on load
+  setState('wait');
+  poll();
   setInterval(poll, POLL_INTERVAL);
   requestWakeLock();
 
