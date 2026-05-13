@@ -311,17 +311,18 @@
 
   async function tryLaunchZoom(originalUrl) {
     const parsed = parseZoomUrl(originalUrl);
-    if (!parsed) { window.location.href = originalUrl; return; }
+    if (!parsed) { window.open(originalUrl, '_blank'); return; }
     const { meetingId, pwd } = parsed;
     const pwdParam = pwd ? `&pwd=${pwd}` : '';
 
-    window.location.href = `zoommtg://zoom.us/join?confno=${meetingId}${pwdParam}`;
+    // Open in new tab so the app tab stays intact
+    const tab = window.open(`zoommtg://zoom.us/join?confno=${meetingId}${pwdParam}`, '_blank');
     await new Promise(r => setTimeout(r, 3000));
-    window.location.href = `zoomus://zoom.us/join?confno=${meetingId}${pwdParam}`;
+    if (tab) tab.location.href = `zoomus://zoom.us/join?confno=${meetingId}${pwdParam}`;
     await new Promise(r => setTimeout(r, 3000));
-    window.location.href = `intent://zoom.us/join?confno=${meetingId}${pwdParam}#Intent;scheme=zoommtg;package=us.zoom.videomeetings;end`;
+    if (tab) tab.location.href = `intent://zoom.us/join?confno=${meetingId}${pwdParam}#Intent;scheme=zoommtg;package=us.zoom.videomeetings;end`;
     await new Promise(r => setTimeout(r, 3000));
-    window.location.href = originalUrl;
+    if (tab) tab.location.href = originalUrl;
   }
 
   // ── Poll ──────────────────────────────────────────────────────────────────
