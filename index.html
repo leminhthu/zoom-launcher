@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="theme-color" content="#080c14"/>
+  <title>Join Class</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080c14;
+      --surface: #0e1520;
+      --border: #1c2a3a;
+      --accent: #2D8CFF;
+      --accent-dark: #1a6fd4;
+      --accent-glow: rgba(45, 140, 255, 0.3);
+      --success: #22c55e;
+      --success-glow: rgba(34, 197, 94, 0.3);
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --text: #e8f0fe;
+      --muted: #4a6080;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      position: relative;
+    }
+
+    /* Animated background */
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(80px);
+      opacity: 0.5;
+    }
+    .bg-orb-1 {
+      width: 300px; height: 300px;
+      background: rgba(45, 140, 255, 0.15);
+      top: -100px; left: 50%;
+      transform: translateX(-50%);
+      animation: float1 8s ease-in-out infinite;
+    }
+    .bg-orb-2 {
+      width: 200px; height: 200px;
+      background: rgba(34, 197, 94, 0.1);
+      bottom: -50px; right: -50px;
+      animation: float2 10s ease-in-out infinite;
+    }
+    @keyframes float1 {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(30px); }
+    }
+    @keyframes float2 {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 340px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+    }
+
+    .header .label {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .header h1 .day {
+      color: var(--accent);
+    }
+
+    .header .time {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    /* Main button */
+    .join-btn {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-family: 'Sora', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      position: relative;
+      box-shadow:
+        0 0 0 8px rgba(45, 140, 255, 0.1),
+        0 0 0 16px rgba(45, 140, 255, 0.05),
+        0 20px 60px var(--accent-glow);
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .join-btn:active {
+      transform: scale(0.95);
+      box-shadow:
+        0 0 0 4px rgba(45, 140, 255, 0.1),
+        0 10px 30px var(--accent-glow);
+    }
+
+    .join-btn .icon {
+      font-size: 40px;
+      line-height: 1;
+    }
+
+    .join-btn .btn-label {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    /* Pulse ring animation */
+    .pulse-ring {
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      opacity: 0;
+      animation: pulse-ring 3s ease-out infinite;
+    }
+    .pulse-ring:nth-child(2) { animation-delay: 1s; }
+    .pulse-ring:nth-child(3) { animation-delay: 2s; }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+
+    /* Status area */
+    .status-area {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 20px;
+      text-align: center;
+      min-height: 72px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .status-icon { font-size: 20px; }
+
+    .status-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .status-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* State variations */
+    .status-area.success {
+      border-color: rgba(34, 197, 94, 0.3);
+      background: rgba(34, 197, 94, 0.05);
+    }
+
+    .status-area.error {
+      border-color: rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .status-area.loading {
+      border-color: rgba(45, 140, 255, 0.3);
+      background: rgba(45, 140, 255, 0.05);
+    }
+
+    .join-btn.success {
+      background: var(--success);
+      box-shadow:
+        0 0 0 8px rgba(34, 197, 94, 0.1),
+        0 0 0 16px rgba(34, 197, 94, 0.05),
+        0 20px 60px var(--success-glow);
+    }
+
+    .join-btn.success .pulse-ring {
+      border-color: var(--success);
+    }
+
+    .join-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 24px; height: 24px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Clock */
+    .clock {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<div class="container">
+
+  <div class="header">
+    <div class="label">Lớp học tiếng Anh</div>
+    <h1>Thứ <span class="day" id="dayDisplay">—</span></h1>
+    <div class="time">20:00 – 21:30 &nbsp;·&nbsp; <span class="clock" id="clockDisplay">--:--</span></div>
+  </div>
+
+  <button class="join-btn" id="joinBtn" onclick="joinClass()">
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <div class="icon">📹</div>
+    <div class="btn-label">Vào lớp</div>
+  </button>
+
+  <div class="status-area" id="statusArea">
+    <div class="status-icon">👋</div>
+    <div class="status-text">Nhấn để vào lớp học</div>
+    <div class="status-sub">Zoom sẽ mở tự động</div>
+  </div>
+
+</div>
+
+<script>
+  // ── CONFIG ────────────────────────────────────────────────────────────────
+  const SUPABASE_URL = 'https://cqqwsfijhngkuzfsbegx.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_J6uwiG-5qraYxeQLiYEMJw_XpCE1hYS';
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const headers = {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+  };
+
+  // Clock & day display
+  function updateClock() {
+    const now = new Date();
+    const days = ['Chủ nhật','Hai','Ba','Tư','Năm','Sáu','Bảy'];
+    document.getElementById('dayDisplay').textContent = days[now.getDay()];
+    document.getElementById('clockDisplay').textContent =
+      now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  }
+  updateClock();
+  setInterval(updateClock, 10000);
+
+  // Status helper
+  function setStatus(type, icon, text, sub) {
+    const area = document.getElementById('statusArea');
+    area.className = `status-area ${type}`;
+    area.innerHTML = `
+      <div class="status-icon">${icon}</div>
+      <div class="status-text">${text}</div>
+      ${sub ? `<div class="status-sub">${sub}</div>` : ''}
+    `;
+  }
+
+  function setLoading() {
+    const area = document.getElementById('statusArea');
+    area.className = 'status-area loading';
+    area.innerHTML = `
+      <div class="spinner"></div>
+      <div class="status-text" style="margin-top:8px">Đang tìm link Zoom…</div>
+    `;
+  }
+
+  async function joinClass() {
+    const btn = document.getElementById('joinBtn');
+    btn.disabled = true;
+    setLoading();
+
+    try {
+      // Fetch latest pending or most recent signal
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/zoom_signals?order=created_at.desc&limit=1`,
+        { headers }
+      );
+      const rows = await res.json();
+
+      if (!rows || rows.length === 0) {
+        setStatus('error', '😔', 'Chưa có link Zoom', 'Con chưa gửi link. Thử lại sau nhé Ba.');
+        btn.disabled = false;
+        return;
+      }
+
+      const row = rows[0];
+
+      // Check if the link is recent (within last 3 hours)
+      const age = (Date.now() - new Date(row.created_at).getTime()) / 1000 / 60;
+      if (age > 180) {
+        setStatus('error', '⏰', 'Link đã cũ', 'Con chưa gửi link mới. Thử lại sau nhé Ba.');
+        btn.disabled = false;
+        return;
+      }
+
+      // Mark as received
+      await fetch(`${SUPABASE_URL}/rest/v1/zoom_signals?id=eq.${row.id}`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'done' }),
+      });
+
+      // Launch Zoom directly via deep link
+      // Convert https://zoom.us/j/MEETINGID?pwd=XXX → zoommtg://zoom.us/join?confno=MEETINGID&pwd=XXX
+      const zoomUrl = row.zoom_url;
+      const deepLink = convertToDeepLink(zoomUrl);
+
+      btn.className = 'join-btn success';
+      setStatus('success', '✅', 'Đang mở Zoom…', 'Chúc Ba học vui!');
+
+      // Open the deep link
+      window.location.href = deepLink;
+
+      // Reset button after delay
+      setTimeout(() => {
+        btn.className = 'join-btn';
+        btn.disabled = false;
+        setStatus('', '👋', 'Nhấn để vào lớp học', 'Zoom sẽ mở tự động');
+      }, 8000);
+
+    } catch (err) {
+      console.error(err);
+      setStatus('error', '❌', 'Lỗi kết nối', 'Kiểm tra wifi rồi thử lại Ba nhé.');
+      btn.disabled = false;
+    }
+  }
+
+  function convertToDeepLink(url) {
+    try {
+      const u = new URL(url);
+
+      // Already a deep link
+      if (url.startsWith('zoommtg://') || url.startsWith('zoomus://')) return url;
+
+      // https://zoom.us/j/MEETINGID?pwd=XXX
+      const pathParts = u.pathname.split('/');
+      const meetingId = pathParts[pathParts.length - 1];
+      const pwd = u.searchParams.get('pwd') || '';
+
+      let deepLink = `zoommtg://zoom.us/join?confno=${meetingId}`;
+      if (pwd) deepLink += `&pwd=${pwd}`;
+      return deepLink;
+
+    } catch (e) {
+      // Fallback: just open the URL directly and let the browser handle it
+      return url;
+    }
+  }
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(console.error);
+  }
+</script>
+</body>
+</html>
