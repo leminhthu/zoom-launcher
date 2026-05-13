@@ -183,16 +183,24 @@
       const rows = await res.json();
       if (!rows || rows.length === 0) {
         btn.className = 'join-btn error';
-        btn.disabled = false;
         setStatus('error', '😔 Chưa có link Zoom', 'Con chưa gửi link. Thử lại sau nhé Bố.');
+        setTimeout(() => {
+          btn.className = 'join-btn';
+          btn.disabled = false;
+          setStatus('', '👋 Nhấn để vào lớp');
+        }, 5000);
         return;
       }
       const row = rows[0];
       const age = (Date.now() - new Date(row.created_at).getTime()) / 1000 / 60;
       if (age > 180) {
         btn.className = 'join-btn error';
-        btn.disabled = false;
         setStatus('error', '⏰ Link đã cũ', 'Con chưa gửi link mới. Thử lại sau nhé Bố.');
+        setTimeout(() => {
+          btn.className = 'join-btn';
+          btn.disabled = false;
+          setStatus('', '👋 Nhấn để vào lớp');
+        }, 5000);
         return;
       }
       await fetch(`${SUPABASE_URL}/rest/v1/zoom_signals?id=eq.${row.id}`, {
@@ -212,8 +220,12 @@
     } catch (err) {
       console.error(err);
       btn.className = 'join-btn error';
-      btn.disabled = false;
       setStatus('error', '❌ Lỗi kết nối', 'Kiểm tra wifi rồi thử lại Bố nhé.');
+      setTimeout(() => {
+        btn.className = 'join-btn';
+        btn.disabled = false;
+        setStatus('', '👋 Nhấn để vào lớp');
+      }, 5000);
     }
   }
   function convertToDeepLink(url) {
