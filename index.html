@@ -143,16 +143,24 @@
     <div class="btn-label">Vào lớp</div>
   </button>
   <div class="status-area" id="statusArea">
-    <div class="status-main">👋 Nhấn để vào lớp</div>
+    <div class="status-main" id="idleText">⏳ Đang chờ link Zoom…</div>
   </div>
 </div>
 <script>
   const SUPABASE_URL = 'https://cqqwsfijhngkuzfsbegx.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxcXdzZmlqaG5na3V6ZnNiZWd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njc3MDEsImV4cCI6MjA5NDE0MzcwMX0.7DUiL5dOu0vcqMHIzeNwyMeIhz92bfR0N7xgGwNmk08';
+
+  let lastHandledId = null;
+  let polling = true;
+  let supabaseChannel = null;
+  let pollTimer = null;
+
   const headers = {
     apikey: SUPABASE_ANON_KEY,
     Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
   };
+
+  // ── UI helpers ────────────────────────────────────────────────────────────
   function setStatus(type, main, sub) {
     const area = document.getElementById('statusArea');
     area.className = `status-area ${type}`;
@@ -161,34 +169,166 @@
       ${sub ? `<div class="status-sub">${sub}</div>` : ''}
     `;
   }
-  function setLoading() {
-    const area = document.getElementById('statusArea');
-    area.className = 'status-area loading';
-    area.innerHTML = `
-      <div class="status-main loading" style="display:flex;align-items:center;gap:14px;">
-        <div class="spinner"></div> Đang tìm link Zoom…
-      </div>
-    `;
+
+  function setIdle() {
+    const btn = document.getElementById('joinBtn');
+    btn.className = 'join-btn';
+    btn.disabled = false;
+    polling = true;
+    setStatus('', '⏳ Đang chờ link Zoom…');
   }
+
+  // ── Time helpers ─────────────────────────────────────────────────────────
+  function isClassWindow() {
+    // Vietnam time = UTC+7
+    const now = new Date();
+    const vnOffset = 7 * 60;
+    const utcMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const vnMin = (utcMin + vnOffset) % (24 * 60);
+    const vnDay = (() => {
+      // Compute Vietnam day of week
+      const vnDate = new Date(now.getTime() + vnOffset * 60000);
+      return vnDate.getUTCDay(); // 0=Sun,2=Tue,5=Fri
+    })();
+    const isClassDay = vnDay === 2 || vnDay === 5; // Tuesday or Friday
+    const isClassTime = vnMin >= 19 * 60 + 30 && vnMin <= 21 * 60 + 30; // 7:30pm–9:30pm
+    return isClassDay && isClassTime;
+  }
+
+  // ── Zoom launch ───────────────────────────────────────────────────────────
+  async function launchZoom(row) {
+    if (row.id === lastHandledId) return;
+    lastHandledId = row.id;
+    polling = false;
+
+    const btn = document.getElementById('joinBtn');
+    btn.className = 'join-btn success';
+    btn.disabled = true;
+
+    const area = document.getElementById('statusArea');
+    area.className = 'status-area success';
+    area.innerHTML = `<div class="status-main success" style="display:flex;align-items:center;gap:14px;"><div class="spinner" style="border-top-color:#22c55e;"></div> Đang mở Zoom…</div>`;
+
+    // Mark as done in Supabase
+    await fetch(`${SUPABASE_URL}/rest/v1/zoom_signals?id=eq.${row.id}`, {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ status: 'done' }),
+    });
+
+    window.location.href = convertToDeepLink(row.zoom_url);
+    setTimeout(setIdle, 10000);
+  }
+
+  // ── Fetch latest signal ───────────────────────────────────────────────────
+  async function fetchLatestSignal() {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/zoom_signals?order=created_at.desc&limit=1`,
+      { headers }
+    );
+    return res.json();
+  }
+
+  function isValidRow(row) {
+    if (!row) return false;
+    if (row.id === lastHandledId) return false;
+    if (row.status === 'done') { lastHandledId = row.id; return false; }
+    const age = (Date.now() - new Date(row.created_at).getTime()) / 1000 / 60;
+    if (age > 180) return false;
+    return true;
+  }
+
+  // ── Real-time push via Supabase websocket ─────────────────────────────────
+  function connectRealtime() {
+    // Supabase Realtime uses a specific websocket protocol
+    const wsUrl = `${SUPABASE_URL.replace('https://', 'wss://')}/realtime/v1/websocket?apikey=${SUPABASE_ANON_KEY}&vsn=1.0.0`;
+    const ws = new WebSocket(wsUrl);
+    let heartbeatTimer = null;
+    let ref = 1;
+
+    ws.onopen = () => {
+      console.log('[Realtime] Connected');
+
+      // Join the postgres_changes channel
+      const joinMsg = {
+        topic: 'realtime:public:zoom_signals',
+        event: 'phx_join',
+        payload: {
+          config: {
+            broadcast: { self: false },
+            postgres_changes: [{ event: 'INSERT', schema: 'public', table: 'zoom_signals' }]
+          }
+        },
+        ref: String(ref++)
+      };
+      ws.send(JSON.stringify(joinMsg));
+
+      // Heartbeat every 30s to keep connection alive
+      heartbeatTimer = setInterval(() => {
+        ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: String(ref++) }));
+      }, 30000);
+    };
+
+    ws.onmessage = async (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        // Postgres INSERT event
+        if (msg.event === 'postgres_changes' || (msg.payload && msg.payload.data && msg.payload.data.type === 'INSERT')) {
+          const record = msg.payload?.data?.record || msg.payload?.record;
+          if (record && isValidRow(record)) {
+            console.log('[Realtime] New signal received via push:', record);
+            await launchZoom(record);
+          }
+        }
+      } catch (err) {
+        console.error('[Realtime] Message parse error:', err);
+      }
+    };
+
+    ws.onerror = (e) => console.warn('[Realtime] WS error:', e);
+
+    ws.onclose = () => {
+      console.warn('[Realtime] Disconnected — reconnecting in 5s…');
+      clearInterval(heartbeatTimer);
+      setTimeout(connectRealtime, 5000);
+    };
+
+    supabaseChannel = ws;
+  }
+
+  // ── Fallback polling (Tue/Fri 7:30–9:30pm VN only) ───────────────────────
+  async function pollFallback() {
+    if (!polling) return;
+    if (!isClassWindow()) return;
+
+    try {
+      const rows = await fetchLatestSignal();
+      if (!rows || rows.length === 0) return;
+      const row = rows[0];
+      if (isValidRow(row)) {
+        console.log('[Fallback] New signal detected via poll:', row);
+        await launchZoom(row);
+      }
+    } catch (err) {
+      console.error('[Fallback] Poll error:', err);
+    }
+  }
+
+  // ── Manual tap ────────────────────────────────────────────────────────────
   async function joinClass() {
     const btn = document.getElementById('joinBtn');
     btn.disabled = true;
-    btn.className = 'join-btn';
-    setLoading();
+    polling = false;
+    const area = document.getElementById('statusArea');
+    area.className = 'status-area loading';
+    area.innerHTML = `<div class="status-main loading" style="display:flex;align-items:center;gap:14px;"><div class="spinner"></div> Đang tìm link Zoom…</div>`;
+
     try {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/zoom_signals?order=created_at.desc&limit=1`,
-        { headers }
-      );
-      const rows = await res.json();
+      const rows = await fetchLatestSignal();
       if (!rows || rows.length === 0) {
         btn.className = 'join-btn error';
         setStatus('error', '😔 Chưa có link Zoom', 'Con chưa gửi link. Thử lại sau nhé Bố.');
-        setTimeout(() => {
-          btn.className = 'join-btn';
-          btn.disabled = false;
-          setStatus('', '👋 Nhấn để vào lớp');
-        }, 5000);
+        setTimeout(setIdle, 5000);
         return;
       }
       const row = rows[0];
@@ -196,38 +336,19 @@
       if (age > 180) {
         btn.className = 'join-btn error';
         setStatus('error', '⏰ Link đã cũ', 'Con chưa gửi link mới. Thử lại sau nhé Bố.');
-        setTimeout(() => {
-          btn.className = 'join-btn';
-          btn.disabled = false;
-          setStatus('', '👋 Nhấn để vào lớp');
-        }, 5000);
+        setTimeout(setIdle, 5000);
         return;
       }
-      await fetch(`${SUPABASE_URL}/rest/v1/zoom_signals?id=eq.${row.id}`, {
-        method: 'PATCH',
-        headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-        body: JSON.stringify({ status: 'done' }),
-      });
-      const deepLink = convertToDeepLink(row.zoom_url);
-      btn.className = 'join-btn success';
-      setStatus('success', '✅ Đang mở Zoom…');
-      window.location.href = deepLink;
-      setTimeout(() => {
-        btn.className = 'join-btn';
-        btn.disabled = false;
-        setStatus('', '👋 Nhấn để vào lớp');
-      }, 8000);
+      await launchZoom(row);
     } catch (err) {
       console.error(err);
       btn.className = 'join-btn error';
       setStatus('error', '❌ Lỗi kết nối', 'Kiểm tra wifi rồi thử lại Bố nhé.');
-      setTimeout(() => {
-        btn.className = 'join-btn';
-        btn.disabled = false;
-        setStatus('', '👋 Nhấn để vào lớp');
-      }, 5000);
+      setTimeout(setIdle, 5000);
     }
   }
+
+  // ── Deep link converter ───────────────────────────────────────────────────
   function convertToDeepLink(url) {
     try {
       if (url.startsWith('zoommtg://') || url.startsWith('zoomus://')) return url;
@@ -242,6 +363,11 @@
       return url;
     }
   }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  connectRealtime();
+  setInterval(pollFallback, 10000);
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.error);
   }
