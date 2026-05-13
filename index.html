@@ -205,7 +205,7 @@
       body: JSON.stringify({ status: 'done' }),
     });
 
-    window.location.href = convertToDeepLink(row.zoom_url);
+    await tryLaunchZoom(row.zoom_url);
     setTimeout(setIdle, 10000);
   }
 
@@ -258,14 +258,57 @@
   }
 
   // ── Deep link ─────────────────────────────────────────────────────────────
-  function convertToDeepLink(url) {
+  function parseZoomUrl(url) {
+    // Handles all Zoom URL formats:
+    // https://zoom.us/j/MEETINGID?pwd=XXX
+    // https://us05web.zoom.us/j/MEETINGID?pwd=XXX
+    // https://us06web.zoom.us/j/MEETINGID?pwd=XXX
+    // https://zoom.us/wc/join/MEETINGID
     try {
-      if (url.startsWith('zoommtg://') || url.startsWith('zoomus://')) return url;
       const u = new URL(url);
-      const meetingId = u.pathname.split('/').pop();
+      const parts = u.pathname.split('/').filter(Boolean);
+      // Find meeting ID — it's the numeric segment after /j/ or /join/
+      let meetingId = null;
+      for (let i = 0; i < parts.length; i++) {
+        if ((parts[i] === 'j' || parts[i] === 'join') && parts[i + 1]) {
+          meetingId = parts[i + 1].replace(/\D/g, ''); // strip non-digits
+          break;
+        }
+      }
+      // Fallback: last numeric-looking segment
+      if (!meetingId) meetingId = parts[parts.length - 1].replace(/\D/g, '');
       const pwd = u.searchParams.get('pwd') || '';
-      return `zoommtg://zoom.us/join?confno=${meetingId}${pwd ? '&pwd=' + pwd : ''}`;
-    } catch(e) { return url; }
+      return { meetingId, pwd };
+    } catch(e) { return null; }
+  }
+
+  function convertToDeepLink(url) {
+    if (url.startsWith('zoommtg://') || url.startsWith('zoomus://')) return url;
+    const parsed = parseZoomUrl(url);
+    if (!parsed) return url;
+    const { meetingId, pwd } = parsed;
+    return `zoommtg://zoom.us/join?confno=${meetingId}${pwd ? '&pwd=' + pwd : ''}`;
+  }
+
+  async function tryLaunchZoom(originalUrl) {
+    const parsed = parseZoomUrl(originalUrl);
+    if (!parsed) { window.location.href = originalUrl; return; }
+    const { meetingId, pwd } = parsed;
+
+    // Strategy 1: zoommtg:// deep link
+    window.location.href = `zoommtg://zoom.us/join?confno=${meetingId}${pwd ? '&pwd=' + pwd : ''}`;
+    await new Promise(r => setTimeout(r, 3000));
+
+    // Strategy 2: zoomus:// (alternative scheme some Android versions prefer)
+    window.location.href = `zoomus://zoom.us/join?confno=${meetingId}${pwd ? '&pwd=' + pwd : ''}`;
+    await new Promise(r => setTimeout(r, 3000));
+
+    // Strategy 3: Android intent:// (most forceful, bypasses scheme resolution)
+    window.location.href = `intent://zoom.us/join?confno=${meetingId}${pwd ? '&pwd=' + pwd : ''}#Intent;scheme=zoommtg;package=us.zoom.videomeetings;end`;
+    await new Promise(r => setTimeout(r, 3000));
+
+    // Strategy 4: fall back to original https URL — triggers "Open with Zoom?" system dialog
+    window.location.href = originalUrl;
   }
 
   // ── Wake Lock ─────────────────────────────────────────────────────────────
