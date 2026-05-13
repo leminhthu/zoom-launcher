@@ -272,7 +272,7 @@
       if (!rows || !rows.length) { setState('error'); return; }
       const row = rows[0];
       const age = (Date.now() - new Date(row.created_at).getTime()) / 1000 / 60;
-      if (row.status === 'done' || age > 180) { setState('error'); return; }
+      if (row.status === 'done' || row.status === 'cancelled' || age > 180) { setState('error'); return; }
       pendingRow = row;
       await doLaunch(row);
     } catch(e) {
